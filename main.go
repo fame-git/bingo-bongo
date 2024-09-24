@@ -1,63 +1,40 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
-	"net/http"
-	"net/url"
-	"os"
-	"strings"
 )
 
-type Words struct {
-	Page  string   `json:"page"`
-	Input string   `json:"input"`
-	Words []string `json:"words"`
+type SlowReader struct {
+	contents string
+	pos      int
+}
+
+func (m *SlowReader) Read(p []byte) (n int, err error) {
+	if m.pos+1 <= len(m.contents) {
+		n := copy(p, m.contents[m.pos:m.pos+1])
+		// 0:1 => h
+		// 1:2 => e
+
+		// 0 <= 1
+		m.pos++
+		return n, nil
+	}
+	return 0, io.EOF
 }
 
 func main() {
-	args := os.Args
 
-	if len(args) < 2 {
-		fmt.Printf("Usage: ./http-get <url>\n")
-		os.Exit(1)
+	slowReaderInstance := &SlowReader{
+		contents: "hello world!",
 	}
 
-	// Default url parser lib
-	if _, err := url.ParseRequestURI(args[1]); err != nil {
-		fmt.Printf("Url is in invalid format: %s\n", err)
-		os.Exit(1)
-	}
-
-	// HTTP req
-	response, err := http.Get(args[1])
+	out, err := io.ReadAll(slowReaderInstance)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	defer response.Body.Close()
-
-	body, err := io.ReadAll(response.Body)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if response.StatusCode != 200 {
-		fmt.Printf("Invalid output (HTTP Code %d): %s\n", response.StatusCode, body)
-		os.Exit(1)
-	}
-
-	var words Words
-
-	err = json.Unmarshal(body, &words)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Printf("JSON Parsed\nPage: %s\nWords: %v", words.Page, strings.Join(words.Words, ", "))
+	fmt.Printf("output: %s\n", out)
 }

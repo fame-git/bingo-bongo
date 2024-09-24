@@ -1,3 +1,3 @@
-module devops/go
+module github.com/wardviaene/go-for-devops-course/http-get-json
 
-go 1.22.5
+go 1.18
